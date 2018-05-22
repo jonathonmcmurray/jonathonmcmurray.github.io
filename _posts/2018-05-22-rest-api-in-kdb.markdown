@@ -1,13 +1,11 @@
 ---
 layout: post
 title:  "Creating a REST API powered by kdb+/q"
-date:   2018-05-18 15:23:49 +0100
 categories: kdb q rest api
 ---
-
 A few weeks ago I published a post on the AquaQ Analytics (my employer) blog regarding using REST APIs in kdb+. You can read that blog post [on the AquaQ blog][aquaq-blog]. Just for fun, I decided to try building the "other side" - creating a REST API powered by kdb+. The result is found in my GitHub repo, [qwebapi][qwebapi-gh].
 
-![Creating a REST API powered by kdb+/q]({{ "/assets/rest.png" | absolute_url }}){: margin: 0 auto; display: block; }
+![Creating a REST API powered by kdb+/q]({{ "/assets/rest.png" | absolute_url }}){: .center-image }
 
 You may be wondering why you would want to provide a REST API from kdb+ - it provides a very simple method of interoperability with other languages and technologies, beyond those with an existing interface (e.g. with [Fusion][kx-fusion] interfaces from kx). Creating products such as web based dashboards is simplified by having data available over REST APIs, for example.
 
@@ -81,7 +79,22 @@ When we defined this one, we made `color` a required parameter, better include i
 
 ![getp]({{ "/assets/getp.png" | absolute_url }})
 
-I haven't shown the use of HTTP basic authorization, but it's quite simple - start the process with `-auth user.txt` where user.txt is a text file containing `user:pass` combinations, one per line. Then, basic authorization will be enabled.
+I haven't shown the use of HTTP basic authorization, but it's quite simple - start the process with `-auth user.txt` where user.txt is a text file containing `user:pass` combinations, one per line. Then, basic authorization will be enabled. Currently, HTTPS is not supported, although I may explore that option in a future post.
+
+Additionally, in the above examples, for simplicity, I only used URL parameters to pass parameters to the functions; for POST requests, request bodies are also supported, supporting both `application/x-www-form-urlencoded` and `application/json` Content-Types. JSON, in particular, allows for more complex objects to be passed into the API if required for certain functions. For GET requests, only URL parameters can be used, and these work for POST requests also. Currently if the same parameter is in URL parameters & POST body, the value from the URL parameter will be used preferentially.
+
+For example, let's define a trivial function that takes a dictionary as one of it's parameters:
+
+{% highlight q %}
+mapval:{[input;dict] dict@input}
+.api.define[`mapval;`input`dict!(`;`a`b`c!1 2 3);`input;`POST]
+{% endhighlight %}
+
+Given this function requires a dictionary, we can't pass that in URL parameters (so it makes no sense to allow GET requests) or a URL encoded body, but we can use a JSON body, for example:
+
+![mapval]({{ "/assets/mapval.png" | absolute_url }})
+
+It might be worth noting that kx have [recently announced][kx-36] that the latest version of kdb+ (3.6) has enhanced support for unstructured data, with JSON support 10 times faster than in previous versions; this should make JSON based REST APIs considerably faster & more efficient now! For further details on the 3.6 release see [code.kx.com][code-36].
 
 As mentioned above, this is not really a "production ready" library, it is quite rudimentary and rough around the edges. The main point was to see if it was possible to write a REST API in pure q (which it is!). If you actually need to provide a kdb+ backed REST API, I suggest you keep an eye on [AquaQ's GitHub][aq-gh] and [blog][aq-blog] for an upcoming open source release; I'm not a part of the team that's been working on this, so I don't know the full extent of the functionality etc., but I'm quite certain it'll be a lot more polished and robust than this simple script!
 
@@ -91,3 +104,7 @@ As mentioned above, this is not really a "production ready" library, it is quite
 [aq-gh]:        https://github.com/AquaQAnalytics
 [aq-blog]:      https://www.aquaq.co.uk/blog/
 [kx-fusion]:    https://code.kx.com/q/interfaces/fusion/
+[sp-q]:         https://raw.githubusercontent.com/KxSystems/kdb/master/sp.q
+[postman]:      https://www.getpostman.com/
+[kx-36]:        https://kx.com/news/kx-provides-rapid-access-to-unstructured-data/
+[code-36]:      http://code.kx.com/q/ref/releases/ChangesIn3.6/
