@@ -4,6 +4,12 @@ title:  "q as a WebSocket client"
 categories: kdb q websocket gdax cryptocurrency
 ---
 
+WebSockets are a technology enabling two-way communication between a client and
+server over a single TCP connection, defined in [RFC6455][rfc6455]. Essentially
+an initial "handshake" HTTP request is sent from client to server, requesting
+an upgrade from HTTP to WebSocket protocol. The server responds with an Upgrade
+message, and communciation begins.
+
 q has been able to act as a WebSocket client since v3.2, but the default usage
 is not the most intuitive, requiring the construction of a raw HTTP request
 string to be sent to the server e.g.
@@ -17,6 +23,10 @@ q)r
 q)neg[r 0]"echo"
 q)"echo"
 {% endhighlight %}
+
+(In order to allow this, kdb+ automatically adds a number of header fields to
+the HTTP request; `Sec-WebSocket-Key`, `Sec-WebSocket-Version`, 
+`Sec-WebSocket-Extensions`, `Upgrade`, `Connection`)
 
 In this example, an echo server is used which will simply echo whatever is sent
 to it. Note that in addition to having to manually construct the query, the
@@ -36,7 +46,7 @@ $ git clone --recursive https://github.com/jonathonmcmurray/ws.q.git
 {% endhighlight %}
 
 (The `--recursive` flag is necessary to also pull reQ, an HTTP request library
-which is used by `ws.q`)
+which is used by `ws.q`; this allows easily building the initial HTTP requests)
 
 `ws.q` allows for multiple callback functions, one per connection, set when
 opening a WebSocket connection. Opening a connection is via `.ws.open`, which
@@ -93,7 +103,9 @@ Also present on the repo is an example WebSocket based feedhandler for the
 [GDAX][gdax] cryptocurrency exchange, which provides a [WebSocket API][gxapi].
 A number of other cryptocurrency exchanges provide WebSocket feeds, and I plan
 to add more example feedhandlers to this repo in time for some of them; keep an
-eye out for those if you're interested!
+eye out for those if you're interested! If there's a particular feed you'd like
+to get implemented, or if you'd like help to integrate the GDAX fh into your
+kdb+ system, feel free to get in touch.
 
 The repo also contains two files called `wsu.q` & `wschaintick.q`; these files
 provide functionality for a chained TP which republished data from a regular
@@ -102,6 +114,7 @@ future post, but they should already be in a usable state if you need to stream
 data from your TP over a WebSocket (e.g. perhaps to an HTML & JS dashboard,
 rather than using some form of polling).
 
+[rfc6455]:       https://tools.ietf.org/html/rfc6455
 [wsq-repo]:      https://github.com/jonathonmcmurray/ws.q
 [gdax]:          https://www.gdax.com/
 [gxapi]:         https://docs.gdax.com/#websocket-feed
