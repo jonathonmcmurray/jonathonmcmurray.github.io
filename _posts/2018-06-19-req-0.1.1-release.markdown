@@ -1,0 +1,123 @@
+---
+layout: post
+title:  "reQ v0.1.2 Official Release"
+categories: kdb q http req
+---
+
+In previous blog posts, both here and on the [AquaQ blog][aq-blog], I have
+mentioned the reQ HTTP library that I've been working on. And the time has come
+for an "official" release! reQ has reached a point where I think it can be
+quite useful, particularly for interacting with web APIs from q. You may be
+wondering what's wrong with `.Q.hg` and `.Q.hp`, the built in HTTP request
+functions in q; reQ has a few nice additional features over these...
+
+#### Automatically parse JSON responses
+
+When your HTTP request returns JSON, reQ will allow parsing it automatically:
+
+{% highlight q %}
+q).Q.hg`$":https://httpbin.org/get"
+"{\"args\":{},\"headers\":{\"Connection\":\"close\",\"Host\":\"httpbin.org\"},\"origin\":\"146.199.80.196\",\"url\":\"https://httpbin.org/get\"}\n"
+q).req.g"https://httpbin.org/get"
+args   | (`symbol$())!()
+headers| `Accept`Connection`Host`User-Agent!("*/*";"close";"httpbin.org";"kdb+/3.5")
+origin | "146.199.80.196"
+url    | "https://httpbin.org/get"
+{% endhighlight %}
+
+#### Adding custom HTTP headers
+
+Some APIs etc. require custom headers (for example, authentication tokens, or
+requiring requests to have a `User-Agent`, which they do not with `.Q.hg`/
+`.Q.hp`). reQ allows for adding custom headers in a simple fashion using a kdb+
+dictionary. For example:
+
+{% highlight q %}
+q).req.get["http://httpbin.org/headers";`custom`headers!("with custom";"values")]
+       | Accept Connection Custom        Headers  Host          User-Agent
+-------| -----------------------------------------------------------------
+headers| "*/*"  "close"    "with custom" "values" "httpbin.org" "kdb+/3.5"
+{% endhighlight %}
+
+#### HTTP redirection
+
+reQ will automatically follow HTTP redirects (3XX status codes)
+
+{% highlight q %}
+q).req.get["http://httpbin.org/relative-redirect/2";()!()];
+args   | (`symbol$())!()
+headers| `Accept`Connection`Host`User-Agent!("*/*";"close";"httpbin.org";"kdb+/3.5")
+origin | "146.199.80.196"
+url    | "http://httpbin.org/get"
+{% endhighlight %}
+
+#### Cookie support
+
+reQ will store received cookies & automatically send them with future HTTP
+requests where applicable.
+
+{% highlight q %}
+q).req.get["http://httpbin.org/cookies/set?abc=123&def=456";()!()]
+       | abc   def
+-------| -----------
+cookies| "123" "456"
+q).req.cookiejar
+host           path name | val   expires maxage secure httponly samesite
+-------------------------| ---------------------------------------------
+".httpbin.org" "/*" "abc"| "123"                0      0
+".httpbin.org" "/*" "def"| "456"                0      0
+{% endhighlight %}
+
+(It's also possible to read & write cookiejar files in the cURL/Netscape 
+format)
+
+More details about all these features can be found on the [documentation site][docs]
+
+#### Installation
+
+reQ can be "installed" by simply downloading `req.q` and loading it within your
+q session. Alternatively, you can download the [release package][release] & use
+this as a package for [qutil][qutil-repo].
+
+Finally, and this is the one I recommend, you can install the package using
+[Anaconda][conda]. Assuming Anaconda is installed (and regardless of platform),
+you can install quite simply like so:
+
+{% highlight bash %}
+(kdb) jonny@kodiak ~ $ conda install -c jmcmurray req
+[ snipped install ]
+(kdb) jonny@kodiak ~ $ q
+KDB+ 3.5 2018.04.25 Copyright (C) 1993-2018 Kx Systems
+l64/ 4(16)core 7360MB jonny kodiak 127.0.1.1 EXPIRE 2019.05.21 jonathon.mcmurray@aquaq.co.uk KOD #4160315
+
+q).utl.require"req"
+q).req.g"https://httpbin.org/get"
+args   | (`symbol$())!()
+headers| `Accept`Connection`Host`User-Agent!("*/*";"close";"httpbin.org";"kdb..
+origin | "146.199.80.196"
+url    | "https://httpbin.org/get"
+{% endhighlight %}
+
+I'll be writing another post soon about using Anaconda to install packages for
+[qutil][qutil-repo], but for now, there's a few packages available [on my repo][conda-repo].
+
+Note that due to the dependency system in Anaconda, by installing `req`, you'll
+also get `qutil` setup, as well as the `json` package to provide JSON support
+below version 3.1, and the `qhttps` package, which enables HTTPS support in q,
+using a set of certificates provided as an Anaconda package.
+
+I intentionally did *not* make the package dependent on kx's kdb package, so
+you can use this no matter how you installed q; it will work with or without
+the kx kdb conda package.
+
+Hopefully you can find this library useful, feedback is very welcome! Let me 
+know what you're using it for, and feel free to open an issue on [GitHub][ghrepo]
+for any bugs or problems you encounter!
+
+[aq-blog]:      https://www.aquaq.co.uk/q/using-kdb-with-rest-apis/
+[docs]:         http://jmcmurray.co.uk/reQ
+[release]:      https://github.com/jonathonmcmurray/reQ/archive/v0.1.2.zip
+[qutil-repo]:   https://github.com/nugend/qutil
+[conda]:        https://www.anaconda.com/download
+[conda-repo]:   https://anaconda.org/jmcmurray/repo
+[ghrepo]:       https://github.com/jonathonmcmurray/reQ
