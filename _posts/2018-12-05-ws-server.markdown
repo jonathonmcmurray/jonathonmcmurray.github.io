@@ -1,0 +1,55 @@
+---
+layout: post
+title:  "Streaming realtime data from kdb+ with WebSockets"
+categories: kdb q websockets
+---
+
+Pretty much everyone who works with kdb+ will be familiar with the standard
+[kdb+tick](https://github.com/KxSystems/kdb-tick) setup (and usually enhanced
+frameworks such as [TorQ](https://github.com/AquaQAnalytics/TorQ) with
+additional functionality). This system allows a tickerplant to receive data
+e.g. from a market data feed & disseminate this data to subscriber processes,
+such as a realtime database (RDB). And of course, other processes can subscribe
+e.g. a realtime metrics process.
+
+This is all very well as long as all the processes subscribing are also q
+processes & can therefore use q IPC for subscribing & receiving messages etc.
+However, sometimes you may wish to stream the incoming data to processes
+written in other languages. While a number of languages have [interfaces](https://code.kx.com/q/interfaces/)
+to/from q, a more universal solution can be imagined using WebSockets.
+
+Virtually all popular modern languages have support for WebSockets & JSON
+parsing, so we can feasibly use these two technologies (both natively supported
+in q) to build a simple system for streaming data from a kdb+ system to non-q
+processes.
+
+I have built a couple of simple libraries related to WebSockets, available in
+my GitHub repo: [https://github.com/jonathonmcmurray/ws.q](https://github.com/jonathonmcmurray/ws.q)
+Within this repo there are 3 scripts; `ws-handler.q` is a general script that
+eases the use of WebSockets, allowing both server side & client side in one
+process; `ws-client.q` is for using q as a WebSocket client (see my [previous blogpost](https://jmcmurray.co.uk/kdb/q/websocket/gdax/cryptocurrency/2018/06/09/q-as-a-websocket-client.html)
+note: the library has been updated slightly since then, but usage should be the
+same); and finally, `ws-server.q` is for using q as a WebSocket server, which
+is what we're interested in currently.
+
+There are two ways to get this up & running; if you are using [qutil & conda](https://jmcmurray.co.uk/kdb/q/package/qutil/anaconda/conda/2018/07/16/q-package-management-with-conda.html)
+for package management in q, you can simply run
+
+```bash
+$ conda install -c jmcmuray ws-server
+```
+
+and then within a q session we simply need to do
+
+```q
+.utl.require"ws-server"
+```
+
+Alternatively, we can clone the `ws.q` repo linked above & load `ws-handler.q`
+followed by `ws-server.q`.
+
+This provides WebSocket equivalennts to the functions found in the standard
+[u.q](https://github.com/KxSystems/kdb-tick/blob/master/tick/u.q) in the `.wsu`
+namespace.
+
+The final piece of the puzzle is creating a tickerplant that
