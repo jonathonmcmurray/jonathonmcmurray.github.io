@@ -63,7 +63,7 @@ total 20K
 Now we can set the necessary environment variables & load up our q session:
 
 ```bash
-jonny@grizzly ~ $ export SSL_CERT_FILE=~/certs/cert.pem
+jonny@grizzly ~ $ export SSL_CERT_FILE=~/certs/fullchain.pem
 jonny@grizzly ~ $ export SSL_KEY_FILE=~/certs/privkey.pem
 jonny@grizzly ~ $ q -E 1 -p 8100
 KDB+ 3.6 2018.05.17 Copyright (C) 1993-2018 Kx Systems
@@ -87,4 +87,5 @@ minutes. As a couple of closing notes:
 HTTPS is allowed (however, HTTP requests will not be redirected to HTTPS - I'll
 be looking into this in future)
 * As per the [kx docs](https://code.kx.com/q/cookbook/ssl/#tls-server-mode)
-`-u 1` should be used to prevent remote access to your server key file
+`-u 1` should be used to prevent remote access to your server key file, & q
+should not be run from a directory where the keys can be accessed
