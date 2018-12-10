@@ -89,3 +89,19 @@ be looking into this in future)
 * As per the [kx docs](https://code.kx.com/q/cookbook/ssl/#tls-server-mode)
 `-u 1` should be used to prevent remote access to your server key file, & q
 should not be run from a directory where the keys can be accessed
+
+*UPDATE:* After publishing this post, I realised that kdb+ seemingly does not
+publish the full certificate chain it is provided, only the server certificate.
+
+This means that, when using Let's Encrypt, the intermediate LE certificate is
+not provided to clients. Some clients (e.g. web browsers) will download the
+intermediate(s) as necessary & the user will likely not notice anything is
+"wrong". Other clients (e.g. another q session) will not, and will therefore
+fail to verify the server certificate.
+
+![HTTPS Chain]({{ "/assets/https-chain.png" | absolute_url }})
+*Report from [SSL Labs](https://www.ssllabs.com/ssltest/index.html)*
+
+In order to send an HTTPS query from another q session, you will need to either
+disable SSL server verification (set env var `SSL_VERIFY_SERVER=NO` before
+starting q) or add your server cert to the CA bundle you are using.
