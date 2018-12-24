@@ -37,10 +37,11 @@ you install another package.
 
 I deliberately did _not_ make any of my packages dependent on the kx kdb
 package - while this is a nice, easy way to get 64-bit kdb+ up & running, it is
-on-demand only & only for Mac & Linux; Anaconda itself works fine on Windows,
-and 32-bit (here's hoping that kx add a Windows version soon, and 32-bit). So
+on-demand only ~~& only for Mac & Linux~~; Anaconda itself works fine on Windows,
+and 32-bit (here's hoping that kx add ~~a Windows version soon, and~~ 32-bit). So
 the q packages installed in this way will work with either Anaconda kdb or
-system kdb (installed via traditional means).
+system kdb (installed via traditional means). **UPDATE: kx have now added Windows
+releases of kdb on Anaconda cloud; still 64-bit on-demand only**
 
 
 
