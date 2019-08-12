@@ -1,0 +1,109 @@
+---
+layout: post
+title:  "Streaming realtime data from kdb+ with WebSockets"
+categories: kdb q websockets
+---
+
+Pretty much everyone who works with kdb+ will be familiar with the standard
+[kdb+tick](https://github.com/KxSystems/kdb-tick) setup (and usually enhanced
+frameworks such as [TorQ](https://github.com/AquaQAnalytics/TorQ) with
+additional functionality). This system allows a tickerplant to receive data
+e.g. from a market data feed & disseminate this data to subscriber processes,
+such as a realtime database (RDB). And of course, other processes can subscribe
+e.g. a realtime metrics process.
+
+This is all very well as long as all the processes subscribing are also q
+processes & can therefore use q IPC for subscribing & receiving messages etc.
+However, sometimes you may wish to stream the incoming data to processes
+written in other languages. While a number of languages have [interfaces](https://code.kx.com/q/interfaces/)
+to/from q, a more universal solution can be imagined using WebSockets.
+
+Virtually all popular modern languages have support for WebSockets & JSON
+parsing, so we can feasibly use these two technologies (both natively supported
+in q) to build a simple system for streaming data from a kdb+ system to non-q
+processes.
+
+I have built a couple of simple libraries related to WebSockets, available in
+my GitHub repo: [https://github.com/jonathonmcmurray/ws.q](https://github.com/jonathonmcmurray/ws.q)
+Within this repo there are 3 scripts; `ws-handler.q` is a general script that
+eases the use of WebSockets, allowing both server side & client side in one
+process; `ws-client.q` is for using q as a WebSocket client (see my [previous blogpost](https://jmcmurray.co.uk/kdb/q/websocket/gdax/cryptocurrency/2018/06/09/q-as-a-websocket-client.html)
+note: the library has been updated slightly since then, but usage should be the
+same); and finally, `ws-server.q` is for using q as a WebSocket server, which
+is what we're interested in currently.
+
+There are two ways to get this up & running; if you are using [qutil & conda](https://jmcmurray.co.uk/kdb/q/package/qutil/anaconda/conda/2018/07/16/q-package-management-with-conda.html)
+for package management in q, you can simply run
+
+```bash
+$ conda install -c jmcmuray ws-server
+```
+
+and then within a q session you simply need to do
+
+```q
+.utl.require"ws-server"
+```
+
+Alternatively, you can clone the `ws.q` repo linked above & load `ws-handler.q`
+followed by `ws-server.q`.
+
+This provides WebSocket equivalennts to the functions found in the standard
+[u.q](https://github.com/KxSystems/kdb-tick/blob/master/tick/u.q) in the `.wsu`
+namespace.
+
+The final piece of the puzzle is creating a tickerplant that can relay data
+from a kdb+tick setup to a non-q process. Working off the standard [`chainedtick.q`](https://github.com/simongarland/tick/blob/master/chainedtick.q)
+I created [`wschaintick.q`](https://github.com/jonathonmcmurray/ws.q/blob/master/wschaintick.q).
+This is a relatively simple script that will connect to a standard tickerplant,
+subscribe for all symbols in all tables, and then publish to any subscribing
+processes over WebSockets.
+
+Assuming a tickerplant running on the default port (`5010`) on localhost, we 
+can simply start a WebSocket chain tickerplant like so:
+
+```bash
+$ q wschaintick.q
+```
+
+(with different ports etc., usage is `q wschaintick.q [host]:port[:usr:pwd] [-p 5110] [-t N]`)
+
+It should also be noted here that if you are not using `qutil`, you will need
+to modify line 8 of `wschaintick.q` to load `ws-handler.q` & `ws-server.q`.
+
+We can then connect to this chain tickerplant & subscribe from other processes.
+For example, the following JavaScript code running with Node.js:
+
+```js
+const WebSocket = require('ws');
+const ws = new WebSocket('ws://127.0.0.1:' + process.argv[2]);
+
+ws.on('open', function open() {
+  ws.send('{"type":"sub","syms":["AAPL","IBM"]}');
+});
+ws.on('message', function incoming(data) {
+  console.log(data);
+});
+```
+
+When we run this, we get the following output:
+
+```bash
+jonny@grizzly ~/git/ws.q (master) $ node eg.js 5110
+["trade",[{"time":"0D22:03:21.093413000","sym":"AAPL","price":132.51,"size":75,"stop":false,"cond":"G","ex":"N"},
+ {"time":"0D22:03:21.093413000","sym":"IBM","price":27.03,"size":20,"stop":false,"cond":"A","ex":"N"}]]
+["quote",[{"time":"0D22:03:21.593401000","sym":"AAPL","bid":132.01,"ask":133.02,"bsize":32,"asize":77,"mode":"Z","ex":"N"},
+ {"time":"0D22:03:21.593401000","sym":"IBM","bid":26.15,"ask":27.98,"bsize":21,"asize":17,"mode":" ","ex":"N"},
+ {"time":"0D22:03:21.593401000","sym":"IBM","bid":26.7,"ask":27.89,"bsize":37,"asize":83,"mode":"R","ex":"N"}]]
+```
+
+Naturally, this streaming data can be used in any way desired. The subscriber
+could, for example, be a browser page displaying a live plot of the data using
+one of the numerous JavaScript charting libraries available.
+
+On a performance note, it should be noted that when streaming to a JS client,
+better performance can likely be achieved by serialising on the q side with `-8!`
+and using `c.js` from kx to deserialise on JS side, instead of using JSON as
+the transport format. However, I have chosen to demonstrate using JSON here as
+this is more universal; most languages with WebSocket support will be able to
+parse JSON, but kdb+ deserialisation libraries are not available everywhere.
