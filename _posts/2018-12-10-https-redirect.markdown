@@ -10,7 +10,7 @@ q to run an HTTPS server. At the tail end of that post, I mentioned redirecting
 HTTP requests to run over HTTPS. Since then, I have written & published a small
 package to do exactly that.
 
-This package (available at the [GitHub repo](INSERT LINK)) overwrites `.z.ph` &
+This package (available at the [GitHub repo](https://github.com/jonathonmcmurray/https-redirect)) overwrites `.z.ph` &
 `.z.pp` to check if the current request is HTTP (checking `.z.e` to determine
 this), & if so, returns a `301 Permanently Moved` HTTP response, redirecting
 the client to HTTPS. If the connection is already HTTPS, the exisitng `.z.ph`
